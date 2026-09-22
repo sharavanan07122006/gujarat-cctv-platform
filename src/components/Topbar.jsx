@@ -1,7 +1,6 @@
 import {
   Bell,
   Search,
-  UserCircle,
   Menu,
 } from "lucide-react";
 
@@ -54,24 +53,6 @@ function Topbar({ setMobileOpen }) {
 
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
-
-        {/* User */}
-        <div className="flex items-center gap-2">
-          <UserCircle
-            size={30}
-            className="text-slate-400"
-          />
-
-          <div className="hidden xl:block">
-            <p className="text-sm font-medium text-slate-800">
-              Administrator
-            </p>
-
-            <p className="text-xs text-slate-500">
-              Platform Admin
-            </p>
-          </div>
-        </div>
 
       </div>
     </header>

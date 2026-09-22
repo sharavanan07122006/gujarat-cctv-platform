@@ -6,7 +6,7 @@ A web-based platform developed for the Gujarat Hackathon to establish a centrali
 
 ## Model 1
 
-**Centralised CCTV Registry & GIS Foundation**
+### Platform Capabilities
 
 The platform provides:
 
@@ -21,6 +21,7 @@ The platform provides:
 ## Technology Stack
 
 ### Frontend
+
 - React
 - Vite
 - Tailwind CSS
