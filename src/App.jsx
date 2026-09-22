@@ -14,7 +14,7 @@ import Health from "./pages/Health";
 
 import AdminLogin from "./pages/AdminLogin";
 import CentralAdminDashboard from "./pages/CentralAdminDashboard";
-
+import DepartmentAdminDashboard from "./pages/DepartmentAdminDashboard";
 function PublicLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -109,6 +109,10 @@ function App() {
             path="/admin/central"
             element={<CentralAdminDashboard />}
           />
+          <Route
+  path="/admin/department"
+  element={<DepartmentAdminDashboard />}
+/>
 
           <Route
             path="/admin/cameras"

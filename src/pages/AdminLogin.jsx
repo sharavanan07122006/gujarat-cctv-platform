@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   ShieldCheck,
   LockKeyhole,
@@ -54,6 +55,7 @@ function AdminLogin() {
       return;
     }
 
+    // Store authenticated demo user
     localStorage.setItem(
       "cctvUser",
       JSON.stringify({
@@ -63,9 +65,10 @@ function AdminLogin() {
       })
     );
 
+    // Redirect based on administrator role
     if (user.role === "CENTRAL_ADMIN") {
       navigate("/admin/central");
-    } else {
+    } else if (user.role === "DEPARTMENT_ADMIN") {
       navigate("/admin/department");
     }
   };
@@ -75,8 +78,9 @@ function AdminLogin() {
 
       <div className="w-full max-w-md">
 
-        {/* Back to public platform */}
+        {/* Back to Public Platform */}
         <button
+          type="button"
           onClick={() => navigate("/")}
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition mb-6"
         >
@@ -98,65 +102,94 @@ function AdminLogin() {
           <p className="mt-2 text-sm text-slate-500">
             Gujarat CCTV Integration Platform
           </p>
+
         </div>
 
         {/* Login Card */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
 
+          {/* Card Header */}
           <div className="mb-6">
+
             <h2 className="text-lg font-semibold text-slate-900">
-              Secure Access
+              Secure Administrator Access
             </h2>
 
             <p className="text-sm text-slate-500 mt-1">
               Sign in using your authorised administrator account.
             </p>
+
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          {/* Login Form */}
+          <form
+            onSubmit={handleLogin}
+            className="space-y-5"
+          >
 
             {/* Username */}
             <div>
+
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Username
               </label>
 
               <div className="relative">
+
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
 
                 <input
                   type="text"
                   value={username}
-                  onChange={(event) => setUsername(event.target.value)}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                    setError("");
+                  }}
                   placeholder="Enter administrator username"
                   className="w-full h-11 pl-10 pr-3 rounded-lg border border-slate-300 outline-none text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  autoComplete="username"
                   required
                 />
+
               </div>
+
             </div>
 
             {/* Password */}
             <div>
+
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Password
               </label>
 
               <div className="relative">
+
                 <LockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
 
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setError("");
+                  }}
                   placeholder="Enter password"
                   className="w-full h-11 pl-10 pr-11 rounded-lg border border-slate-300 outline-none text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  autoComplete="current-password"
                   required
                 />
 
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() =>
+                    setShowPassword((previous) => !previous)
+                  }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -164,43 +197,71 @@ function AdminLogin() {
                     <Eye className="w-5 h-5" />
                   )}
                 </button>
+
               </div>
+
             </div>
 
             {/* Error */}
             {error && (
               <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+
                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
 
                 <p className="text-sm text-red-700">
                   {error}
                 </p>
+
               </div>
             )}
 
-            {/* Login */}
+            {/* Sign In */}
             <button
               type="submit"
-              className="w-full h-11 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+              className="w-full h-11 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition"
             >
               Sign In
             </button>
+
           </form>
 
-          {/* Security notice */}
-          <div className="mt-6 rounded-lg bg-slate-50 border border-slate-200 p-3">
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Administrator access is restricted. Production authentication
-              and authorization will be enforced by the backend.
-            </p>
+          {/* Access Information */}
+          <div className="mt-6 space-y-3">
+
+            <div className="rounded-lg bg-blue-50 border border-blue-100 p-3">
+
+              <p className="text-xs font-semibold text-blue-800">
+                Administrator Access
+              </p>
+
+              <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                Central administrators can manage the complete
+                platform, while department administrators can
+                access their authorised department infrastructure.
+              </p>
+
+            </div>
+
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Production authentication and authorization will
+                be enforced by the Spring Boot backend.
+              </p>
+
+            </div>
+
           </div>
+
         </div>
 
+        {/* Footer */}
         <p className="text-center text-xs text-slate-400 mt-5">
           Centralised CCTV Registry & GIS Foundation
         </p>
 
       </div>
+
     </div>
   );
 }
