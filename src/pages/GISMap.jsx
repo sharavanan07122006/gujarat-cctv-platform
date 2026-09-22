@@ -1,4 +1,10 @@
-import { useMemo, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   MapPin,
   Search,
@@ -14,6 +20,7 @@ import {
   Marker,
   Popup,
   Circle,
+  Polygon,
   useMap,
 } from "react-leaflet";
 
@@ -36,11 +43,11 @@ const cameras = [
     status: "Online",
     lastHeartbeat: "2 mins ago",
 
-    // GIS Coverage Configuration
     coverageRangeMeters: 150,
     direction: 90,
     fieldOfView: 70,
   },
+
   {
     id: "CAM-GJ-002",
     name: "SG Highway Surveillance",
@@ -56,6 +63,7 @@ const cameras = [
     direction: 180,
     fieldOfView: 60,
   },
+
   {
     id: "CAM-GJ-003",
     name: "Vadodara Railway Road",
@@ -71,6 +79,7 @@ const cameras = [
     direction: 270,
     fieldOfView: 90,
   },
+
   {
     id: "CAM-GJ-004",
     name: "Gandhinagar Sector 21",
@@ -86,6 +95,7 @@ const cameras = [
     direction: 45,
     fieldOfView: 60,
   },
+
   {
     id: "CAM-GJ-005",
     name: "Surat Ring Road",
@@ -101,6 +111,7 @@ const cameras = [
     direction: 135,
     fieldOfView: 50,
   },
+
   {
     id: "CAM-GJ-006",
     name: "Rajkot City Centre",
@@ -153,7 +164,11 @@ const offlineIcon = new L.Icon({
 function MapController({ selectedCamera }) {
   const map = useMap();
 
-  if (selectedCamera) {
+  useEffect(() => {
+    if (!selectedCamera) {
+      return;
+    }
+
     map.flyTo(
       [
         selectedCamera.latitude,
@@ -164,9 +179,86 @@ function MapController({ selectedCamera }) {
         duration: 1,
       }
     );
-  }
+  }, [selectedCamera, map]);
 
   return null;
+}
+
+/* -------------------------------------------------------
+   CCTV Coverage Sector
+------------------------------------------------------- */
+
+function CoverageSector({
+  latitude,
+  longitude,
+  radius,
+  direction,
+  fieldOfView,
+  status,
+}) {
+  const createSectorPoints = () => {
+    const points = [];
+
+    const earthRadius = 6378137;
+
+    const centerLatRad =
+      (latitude * Math.PI) / 180;
+
+    const startAngle =
+      direction - fieldOfView / 2;
+
+    const endAngle =
+      direction + fieldOfView / 2;
+
+    for (
+      let angle = startAngle;
+      angle <= endAngle;
+      angle += 2
+    ) {
+      const angleRad =
+        (angle * Math.PI) / 180;
+
+      const deltaLat =
+        (radius * Math.cos(angleRad)) /
+        earthRadius;
+
+      const deltaLng =
+        (radius * Math.sin(angleRad)) /
+        (earthRadius *
+          Math.cos(centerLatRad));
+
+      points.push([
+        latitude +
+          (deltaLat * 180) / Math.PI,
+
+        longitude +
+          (deltaLng * 180) / Math.PI,
+      ]);
+    }
+
+    return [
+      [latitude, longitude],
+      ...points,
+      [latitude, longitude],
+    ];
+  };
+
+  const color =
+    status === "Online"
+      ? "#16a34a"
+      : "#dc2626";
+
+  return (
+    <Polygon
+      positions={createSectorPoints()}
+      pathOptions={{
+        color,
+        fillColor: color,
+        fillOpacity: 0.16,
+        weight: 1.5,
+      }}
+    />
+  );
 }
 
 /* -------------------------------------------------------
@@ -174,7 +266,9 @@ function MapController({ selectedCamera }) {
 ------------------------------------------------------- */
 
 function GISMap() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
+
   const [departmentFilter, setDepartmentFilter] =
     useState("All");
 
@@ -190,17 +284,27 @@ function GISMap() {
 
   const filteredCameras = useMemo(() => {
     return cameras.filter((camera) => {
-      const searchText = search.toLowerCase();
+      const searchText =
+        search.toLowerCase();
 
       const matchesSearch =
-        camera.id.toLowerCase().includes(searchText) ||
-        camera.name.toLowerCase().includes(searchText) ||
-        camera.district.toLowerCase().includes(searchText) ||
-        camera.department.toLowerCase().includes(searchText);
+        camera.id
+          .toLowerCase()
+          .includes(searchText) ||
+        camera.name
+          .toLowerCase()
+          .includes(searchText) ||
+        camera.district
+          .toLowerCase()
+          .includes(searchText) ||
+        camera.department
+          .toLowerCase()
+          .includes(searchText);
 
       const matchesDepartment =
         departmentFilter === "All" ||
-        camera.department === departmentFilter;
+        camera.department ===
+          departmentFilter;
 
       const matchesStatus =
         statusFilter === "All" ||
@@ -223,16 +327,20 @@ function GISMap() {
   ------------------------------------------------------- */
 
   const onlineCount = cameras.filter(
-    (camera) => camera.status === "Online"
+    (camera) =>
+      camera.status === "Online"
   ).length;
 
   const offlineCount = cameras.filter(
-    (camera) => camera.status === "Offline"
+    (camera) =>
+      camera.status === "Offline"
   ).length;
 
   const departments = [
     ...new Set(
-      cameras.map((camera) => camera.department)
+      cameras.map(
+        (camera) => camera.department
+      )
     ),
   ];
 
@@ -247,7 +355,8 @@ function GISMap() {
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Geospatial view of registered CCTV infrastructure
+          Geospatial view of registered CCTV
+          infrastructure
         </p>
       </div>
 
@@ -358,7 +467,9 @@ function GISMap() {
           <select
             value={departmentFilter}
             onChange={(e) =>
-              setDepartmentFilter(e.target.value)
+              setDepartmentFilter(
+                e.target.value
+              )
             }
             className="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white outline-none focus:border-blue-500"
           >
@@ -367,14 +478,16 @@ function GISMap() {
               All Departments
             </option>
 
-            {departments.map((department) => (
-              <option
-                key={department}
-                value={department}
-              >
-                {department}
-              </option>
-            ))}
+            {departments.map(
+              (department) => (
+                <option
+                  key={department}
+                  value={department}
+                >
+                  {department}
+                </option>
+              )
+            )}
 
           </select>
 
@@ -383,7 +496,9 @@ function GISMap() {
           <select
             value={statusFilter}
             onChange={(e) =>
-              setStatusFilter(e.target.value)
+              setStatusFilter(
+                e.target.value
+              )
             }
             className="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white outline-none focus:border-blue-500"
           >
@@ -414,7 +529,7 @@ function GISMap() {
 
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
 
-          <div className="h-[500px] sm:h-[600px]">
+          <div className="relative h-[500px] sm:h-[600px]">
 
             <MapContainer
               center={[22.5, 72.5]}
@@ -427,124 +542,270 @@ function GISMap() {
                 attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              {/* GIS Legend */}
 
+<div className="absolute top-4 right-4 z-[1000] bg-white rounded-xl border border-slate-200 shadow-md p-4 w-56">
+
+  <div className="flex items-center justify-between mb-3">
+    <h3 className="text-sm font-semibold text-slate-900">
+      Map Legend
+    </h3>
+
+    <MapPin className="w-4 h-4 text-slate-400" />
+  </div>
+
+  <div className="space-y-3">
+
+    {/* Online Camera */}
+
+    <div className="flex items-center gap-3">
+      <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow" />
+
+      <span className="text-xs text-slate-600">
+        Online Camera
+      </span>
+    </div>
+
+    {/* Offline Camera */}
+
+    <div className="flex items-center gap-3">
+      <span className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow" />
+
+      <span className="text-xs text-slate-600">
+        Offline Camera
+      </span>
+    </div>
+
+    {/* Coverage Area */}
+
+    <div className="flex items-center gap-3">
+      <span className="w-7 h-3 rounded-full bg-emerald-100 border border-emerald-500" />
+
+      <span className="text-xs text-slate-600">
+        Coverage Area
+      </span>
+    </div>
+
+    {/* FOV */}
+
+    <div className="flex items-center gap-3">
+      <span className="w-7 h-3 rounded-sm bg-emerald-200 border border-emerald-600" />
+
+      <span className="text-xs text-slate-600">
+        Camera FOV
+      </span>
+    </div>
+
+  </div>
+
+  {/* Information */}
+
+  <div className="mt-4 pt-3 border-t border-slate-100">
+
+    <div className="flex justify-between text-[11px]">
+      <span className="text-slate-400">
+        Range
+      </span>
+
+      <span className="font-medium text-slate-600">
+        metres
+      </span>
+    </div>
+
+    <div className="flex justify-between text-[11px] mt-1">
+      <span className="text-slate-400">
+        Direction
+      </span>
+
+      <span className="font-medium text-slate-600">
+        from North
+      </span>
+    </div>
+
+    <div className="flex justify-between text-[11px] mt-1">
+      <span className="text-slate-400">
+        FOV
+      </span>
+
+      <span className="font-medium text-slate-600">
+        horizontal angle
+      </span>
+    </div>
+
+  </div>
+
+</div>
               <MapController
-                selectedCamera={selectedCamera}
+                selectedCamera={
+                  selectedCamera
+                }
               />
 
-              {filteredCameras.map((camera) => (
-
-                <div key={camera.id}>
-
-                  {/* Coverage Radius */}
-
-                  <Circle
-                    center={[
-                      camera.latitude,
-                      camera.longitude,
-                    ]}
-                    radius={
-                      camera.coverageRangeMeters
-                    }
-                    pathOptions={{
-                      color:
-                        camera.status === "Online"
-                          ? "#16a34a"
-                          : "#dc2626",
-
-                      fillColor:
-                        camera.status === "Online"
-                          ? "#16a34a"
-                          : "#dc2626",
-
-                      fillOpacity: 0.08,
-                      weight: 1.5,
-                    }}
-                  />
-
-                  {/* Camera Marker */}
-
-                  <Marker
-                    position={[
-                      camera.latitude,
-                      camera.longitude,
-                    ]}
-                    icon={
-                      camera.status === "Online"
-                        ? onlineIcon
-                        : offlineIcon
-                    }
-                    eventHandlers={{
-                      click: () =>
-                        setSelectedCamera(camera),
-                    }}
+              {filteredCameras.map(
+                (camera) => (
+                  <Fragment
+                    key={camera.id}
                   >
 
-                    <Popup>
+                    {/* Directional FOV */}
 
-                      <div className="min-w-[220px]">
+                    <CoverageSector
+                      latitude={
+                        camera.latitude
+                      }
+                      longitude={
+                        camera.longitude
+                      }
+                      radius={
+                        camera.coverageRangeMeters
+                      }
+                      direction={
+                        camera.direction
+                      }
+                      fieldOfView={
+                        camera.fieldOfView
+                      }
+                      status={
+                        camera.status
+                      }
+                    />
 
-                        <p className="font-semibold text-slate-900">
-                          {camera.name}
-                        </p>
+                    {/* Coverage Radius */}
 
-                        <p className="text-xs text-slate-500 mt-1">
-                          {camera.id}
-                        </p>
+                    <Circle
+                      center={[
+                        camera.latitude,
+                        camera.longitude,
+                      ]}
+                      radius={
+                        camera.coverageRangeMeters
+                      }
+                      pathOptions={{
+                        color:
+                          camera.status ===
+                          "Online"
+                            ? "#16a34a"
+                            : "#dc2626",
 
-                        <div className="mt-3 space-y-1.5 text-sm">
+                        fillColor:
+                          camera.status ===
+                          "Online"
+                            ? "#16a34a"
+                            : "#dc2626",
 
-                          <p>
-                            <strong>District:</strong>{" "}
-                            {camera.district}
+                        fillOpacity: 0.03,
+                        weight: 1,
+                      }}
+                    />
+
+                    {/* Camera Marker */}
+
+                    <Marker
+                      position={[
+                        camera.latitude,
+                        camera.longitude,
+                      ]}
+                      icon={
+                        camera.status ===
+                        "Online"
+                          ? onlineIcon
+                          : offlineIcon
+                      }
+                      eventHandlers={{
+                        click: () =>
+                          setSelectedCamera(
+                            camera
+                          ),
+                      }}
+                    >
+
+                      <Popup>
+
+                        <div className="min-w-[220px]">
+
+                          <p className="font-semibold text-slate-900">
+                            {camera.name}
                           </p>
 
-                          <p>
-                            <strong>Type:</strong>{" "}
-                            {camera.type}
+                          <p className="text-xs text-slate-500 mt-1">
+                            {camera.id}
                           </p>
 
-                          <p>
-                            <strong>Status:</strong>{" "}
+                          <div className="mt-3 space-y-1.5 text-sm">
 
-                            <span
-                              className={
-                                camera.status === "Online"
-                                  ? "text-emerald-600 font-medium"
-                                  : "text-red-600 font-medium"
-                              }
-                            >
-                              {camera.status}
-                            </span>
+                            <p>
+                              <strong>
+                                Department:
+                              </strong>{" "}
+                              {camera.department}
+                            </p>
 
-                          </p>
+                            <p>
+                              <strong>
+                                District:
+                              </strong>{" "}
+                              {camera.district}
+                            </p>
 
-                          <p>
-                            <strong>Coverage:</strong>{" "}
-                            {camera.coverageRangeMeters} m
-                          </p>
+                            <p>
+                              <strong>
+                                Type:
+                              </strong>{" "}
+                              {camera.type}
+                            </p>
 
-                          <p>
-                            <strong>Direction:</strong>{" "}
-                            {camera.direction}°
-                          </p>
+                            <p>
+                              <strong>
+                                Status:
+                              </strong>{" "}
 
-                          <p>
-                            <strong>FOV:</strong>{" "}
-                            {camera.fieldOfView}°
-                          </p>
+                              <span
+                                className={
+                                  camera.status ===
+                                  "Online"
+                                    ? "text-emerald-600 font-medium"
+                                    : "text-red-600 font-medium"
+                                }
+                              >
+                                {camera.status}
+                              </span>
+                            </p>
+
+                            <p>
+                              <strong>
+                                Coverage:
+                              </strong>{" "}
+                              {
+                                camera.coverageRangeMeters
+                              }{" "}
+                              m
+                            </p>
+
+                            <p>
+                              <strong>
+                                Direction:
+                              </strong>{" "}
+                              {camera.direction}°
+                            </p>
+
+                            <p>
+                              <strong>
+                                FOV:
+                              </strong>{" "}
+                              {camera.fieldOfView}°
+                            </p>
+
+                          </div>
 
                         </div>
 
-                      </div>
+                      </Popup>
 
-                    </Popup>
+                    </Marker>
 
-                  </Marker>
-
-                </div>
-
-              ))}
+                  </Fragment>
+                )
+              )}
 
             </MapContainer>
 
@@ -567,7 +828,8 @@ function GISMap() {
                 </h2>
 
                 <p className="text-xs text-slate-500 mt-1">
-                  {filteredCameras.length} cameras shown
+                  {filteredCameras.length}{" "}
+                  cameras shown
                 </p>
 
               </div>
@@ -594,79 +856,91 @@ function GISMap() {
 
             ) : (
 
-              filteredCameras.map((camera) => (
+              filteredCameras.map(
+                (camera) => (
 
-                <button
-                  key={camera.id}
-                  onClick={() =>
-                    setSelectedCamera(camera)
-                  }
-                  className={`w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 transition ${
-                    selectedCamera?.id === camera.id
-                      ? "bg-blue-50"
-                      : ""
-                  }`}
-                >
+                  <button
+                    key={camera.id}
+                    onClick={() =>
+                      setSelectedCamera(
+                        camera
+                      )
+                    }
+                    className={`w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 transition ${
+                      selectedCamera?.id ===
+                      camera.id
+                        ? "bg-blue-50"
+                        : ""
+                    }`}
+                  >
 
-                  <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3">
 
-                    <div
-                      className={`mt-1 w-2.5 h-2.5 rounded-full ${
-                        camera.status === "Online"
-                          ? "bg-emerald-500"
-                          : "bg-red-500"
-                      }`}
-                    />
+                      <div
+                        className={`mt-1 w-2.5 h-2.5 rounded-full ${
+                          camera.status ===
+                          "Online"
+                            ? "bg-emerald-500"
+                            : "bg-red-500"
+                        }`}
+                      />
 
-                    <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
 
-                      <p className="font-medium text-sm text-slate-900 truncate">
-                        {camera.name}
-                      </p>
+                        <p className="font-medium text-sm text-slate-900 truncate">
+                          {camera.name}
+                        </p>
 
-                      <p className="text-xs text-slate-500 mt-1">
-                        {camera.id}
-                      </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {camera.id}
+                        </p>
 
-                      <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
 
-                        <Building2 className="w-3.5 h-3.5" />
+                          <Building2 className="w-3.5 h-3.5" />
 
-                        <span className="truncate">
-                          {camera.department}
-                        </span>
+                          <span className="truncate">
+                            {camera.department}
+                          </span>
 
-                      </div>
+                        </div>
 
-                      <p className="text-xs text-slate-400 mt-1">
-                        {camera.district} · {camera.type}
-                      </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {camera.district} ·{" "}
+                          {camera.type}
+                        </p>
 
-                      {/* Coverage Info */}
+                        {/* Coverage Info */}
 
-                      <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
 
-                        <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
-                          {camera.coverageRangeMeters} m range
-                        </span>
+                          <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
+                            {
+                              camera.coverageRangeMeters
+                            }{" "}
+                            m range
+                          </span>
 
-                        <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
-                          {camera.direction}° direction
-                        </span>
+                          <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
+                            {camera.direction}°
+                            direction
+                          </span>
 
-                        <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
-                          {camera.fieldOfView}° FOV
-                        </span>
+                          <span className="px-2 py-1 rounded-md bg-slate-100 text-[11px] text-slate-600">
+                            {camera.fieldOfView}°
+                            FOV
+                          </span>
+
+                        </div>
 
                       </div>
 
                     </div>
 
-                  </div>
+                  </button>
 
-                </button>
-
-              ))
+                )
+              )
 
             )}
 
@@ -686,7 +960,7 @@ function GISMap() {
 
             <div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
 
                 <h2 className="font-semibold text-slate-900">
                   {selectedCamera.name}
@@ -694,7 +968,8 @@ function GISMap() {
 
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedCamera.status === "Online"
+                    selectedCamera.status ===
+                    "Online"
                       ? "bg-emerald-50 text-emerald-700"
                       : "bg-red-50 text-red-700"
                   }`}
@@ -726,7 +1001,6 @@ function GISMap() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
 
             <div>
-
               <p className="text-xs text-slate-500">
                 Department
               </p>
@@ -734,11 +1008,9 @@ function GISMap() {
               <p className="text-sm font-medium text-slate-900 mt-1">
                 {selectedCamera.department}
               </p>
-
             </div>
 
             <div>
-
               <p className="text-xs text-slate-500">
                 District
               </p>
@@ -746,11 +1018,9 @@ function GISMap() {
               <p className="text-sm font-medium text-slate-900 mt-1">
                 {selectedCamera.district}
               </p>
-
             </div>
 
             <div>
-
               <p className="text-xs text-slate-500">
                 Camera Type
               </p>
@@ -758,11 +1028,9 @@ function GISMap() {
               <p className="text-sm font-medium text-slate-900 mt-1">
                 {selectedCamera.type}
               </p>
-
             </div>
 
             <div>
-
               <p className="text-xs text-slate-500">
                 Last Heartbeat
               </p>
@@ -770,7 +1038,6 @@ function GISMap() {
               <p className="text-sm font-medium text-slate-900 mt-1">
                 {selectedCamera.lastHeartbeat}
               </p>
-
             </div>
 
           </div>
@@ -792,7 +1059,10 @@ function GISMap() {
                 </p>
 
                 <p className="text-lg font-semibold text-slate-900 mt-1">
-                  {selectedCamera.coverageRangeMeters} m
+                  {
+                    selectedCamera.coverageRangeMeters
+                  }{" "}
+                  m
                 </p>
 
                 <p className="text-xs text-slate-400 mt-1">
@@ -851,16 +1121,17 @@ function GISMap() {
             </p>
 
           </div>
+
           {/* Demo Notice */}
 
           <div className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3">
 
             <p className="text-xs text-blue-700 leading-relaxed">
               Coverage values shown are demonstration
-              configuration data. Actual CCTV coverage depends
-              on camera lens, mounting height, focal length,
-              orientation, PTZ position, and environmental
-              conditions.
+              configuration data. Actual CCTV coverage
+              depends on camera lens, mounting height,
+              focal length, orientation, PTZ position,
+              and environmental conditions.
             </p>
 
           </div>
@@ -868,6 +1139,7 @@ function GISMap() {
         </div>
 
       )}
+
     </div>
   );
 }
