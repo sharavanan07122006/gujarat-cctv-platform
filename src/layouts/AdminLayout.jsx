@@ -18,38 +18,72 @@ function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
-  const navItems = [
-    {
-      name: "Admin Dashboard",
-      path: "/admin/central",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "CCTV Registry",
-      path: "/admin/cameras",
-      icon: Camera,
-    },
-    {
-      name: "GIS Map",
-      path: "/admin/gis-map",
-      icon: Map,
-    },
-    {
-      name: "Departments",
-      path: "/admin/departments",
-      icon: Building2,
-    },
-    {
-      name: "VMS Systems",
-      path: "/admin/vms",
-      icon: Server,
-    },
-    {
-      name: "System Health",
-      path: "/admin/health",
-      icon: Activity,
-    },
-  ];
+  const user = JSON.parse(
+    localStorage.getItem("cctvUser") || "{}"
+  );
+
+  const isCentralAdmin = user.role === "CENTRAL_ADMIN";
+
+  const navItems = isCentralAdmin
+    ? [
+        {
+          name: "Admin Dashboard",
+          path: "/admin/central",
+          icon: LayoutDashboard,
+        },
+        {
+          name: "CCTV Registry",
+          path: "/admin/cameras",
+          icon: Camera,
+        },
+        {
+          name: "GIS Map",
+          path: "/admin/gis-map",
+          icon: Map,
+        },
+        {
+          name: "Departments",
+          path: "/admin/departments",
+          icon: Building2,
+        },
+        {
+          name: "VMS Systems",
+          path: "/admin/vms",
+          icon: Server,
+        },
+        {
+          name: "System Health",
+          path: "/admin/health",
+          icon: Activity,
+        },
+      ]
+    : [
+        {
+          name: "Department Dashboard",
+          path: "/admin/department",
+          icon: LayoutDashboard,
+        },
+        {
+          name: "My CCTV Registry",
+          path: "/admin/cameras",
+          icon: Camera,
+        },
+        {
+          name: "My GIS Map",
+          path: "/admin/gis-map",
+          icon: Map,
+        },
+        {
+          name: "My VMS Systems",
+          path: "/admin/vms",
+          icon: Server,
+        },
+        {
+          name: "My System Health",
+          path: "/admin/health",
+          icon: Activity,
+        },
+      ];
 
   const handleLogout = () => {
     localStorage.removeItem("cctvUser");
@@ -67,7 +101,7 @@ function AdminLayout() {
         />
       )}
 
-      {/* Admin Sidebar */}
+      {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 z-50
@@ -100,13 +134,14 @@ function AdminLayout() {
               </h1>
 
               <p className="text-[11px] text-slate-500">
-                Central Administration
+                {isCentralAdmin
+                  ? "Central Administration"
+                  : "Department Administration"}
               </p>
             </div>
 
           </div>
 
-          {/* Mobile Close */}
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
@@ -121,10 +156,13 @@ function AdminLayout() {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
 
           <p className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Administration
+            {isCentralAdmin
+              ? "Administration"
+              : "Department"}
           </p>
 
           {navItems.map((item) => {
+
             const Icon = item.icon;
 
             return (
@@ -147,6 +185,7 @@ function AdminLayout() {
                   `
                 }
               >
+
                 {({ isActive }) => (
                   <>
                     <Icon
@@ -160,16 +199,16 @@ function AdminLayout() {
                     <span>{item.name}</span>
                   </>
                 )}
+
               </NavLink>
             );
           })}
 
         </nav>
 
-        {/* Bottom Admin Section */}
+        {/* User / Logout */}
         <div className="mt-auto p-4 border-t border-slate-200 bg-white shrink-0">
 
-          {/* Admin Status */}
           <div className="bg-slate-50 rounded-lg p-3 mb-3">
 
             <div className="flex items-center gap-2">
@@ -177,18 +216,21 @@ function AdminLayout() {
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
               <span className="text-xs font-medium text-slate-700">
-                Central Admin
+                {isCentralAdmin
+                  ? "Central Admin"
+                  : "Department Admin"}
               </span>
 
             </div>
 
             <p className="text-[11px] text-slate-500 mt-1">
-              Full platform access
+              {isCentralAdmin
+                ? "Full platform access"
+                : user.department || "Department access"}
             </p>
 
           </div>
 
-          {/* Logout */}
           <button
             type="button"
             onClick={handleLogout}
@@ -196,10 +238,7 @@ function AdminLayout() {
           >
             <LogOut className="w-5 h-5" />
 
-            <span>
-              Logout
-            </span>
-
+            <span>Logout</span>
           </button>
 
         </div>
@@ -209,13 +248,11 @@ function AdminLayout() {
       {/* Main Content */}
       <div className="lg:ml-64 min-h-screen">
 
-        {/* Admin Topbar */}
+        {/* Topbar */}
         <header className="h-20 bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
 
-          {/* Left */}
           <div className="flex items-center gap-3">
 
-            {/* Mobile Menu */}
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
@@ -225,25 +262,43 @@ function AdminLayout() {
             </button>
 
             <div>
+
               <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                Central Administration
+                {isCentralAdmin
+                  ? "Central Administration"
+                  : user.department || "Department Administration"}
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-500">
-                Platform management and monitoring
+                {isCentralAdmin
+                  ? "Platform management and monitoring"
+                  : "Department infrastructure management"}
               </p>
+
             </div>
 
           </div>
 
-          {/* Right */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100">
+          {/* User Info */}
+          <div className="hidden sm:flex items-center gap-3">
 
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
+            <div className="text-right">
 
-            <span className="text-xs font-medium text-blue-700">
-              Admin Access
-            </span>
+              <p className="text-sm font-medium text-slate-800">
+                {user.username || "Administrator"}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                {isCentralAdmin
+                  ? "Central Administrator"
+                  : "Department Administrator"}
+              </p>
+
+            </div>
+
+            <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-blue-600" />
+            </div>
 
           </div>
 
